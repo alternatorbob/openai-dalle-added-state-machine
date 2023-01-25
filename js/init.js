@@ -1,6 +1,7 @@
 import { addClick } from "./detection.js";
 import { Camera } from "./main.js";
 let faceapi;
+let currentFacingMode = "environment";
 
 export let UI_BUTTONS = [
   {
@@ -15,7 +16,11 @@ export let UI_BUTTONS = [
     id: "submit--trigger",
     dispatch: "submit",
   },
+  { id: "lds-grid" },
 ];
+
+const UI_CAMERA = ["camera--view", "camera--result", "detections--canvas"];
+export const UI_MESSAGES = [{ id: "none--detected" }];
 
 export function appInit() {
   const detectionOptions = {
@@ -28,19 +33,30 @@ export function appInit() {
 
 function modelLoaded() {
   console.log("Model Loaded!");
-  cameraStart();
+  cameraStart("environment");
+  addListeners();
 }
 
 function cameraStart() {
-  // Set constraints for the video stream
+  if (currentFacingMode === "user") {
+    currentFacingMode = "environment";
+    UI_CAMERA.forEach((elem) => {
+      document.querySelector(`#${elem}`).classList.remove("flipped");
+    });
+  } else {
+    currentFacingMode = "user";
+    UI_CAMERA.forEach((elem) => {
+      document.querySelector(`#${elem}`).classList.add("flipped");
+    });
+  }
+
   let constraints = {
     video: {
-      // facingMode: "user",
-      //   width: 1920,
-      //   height: 1080,
-
+      facingMode: currentFacingMode,
       width: window.innerWidth,
       height: window.innerHeight,
+      // width: 1920,
+      // height: 1080,
     },
     audio: false,
   };
@@ -52,9 +68,6 @@ function cameraStart() {
     .then((stream) => {
       const cameraView = document.querySelector("#camera--view");
       cameraView.srcObject = stream;
-    })
-    .then(() => {
-      addListeners();
     })
     .catch((error) => {
       console.error("Oops. Something is broken.", error);
@@ -73,13 +86,29 @@ function addListeners() {
     element.hide = () => selector.classList.add("hidden");
   });
 
+  UI_MESSAGES.forEach((element) => {
+    const selector = document.querySelector(`#${element.id}`);
+    element.show = () => selector.classList.remove("hidden");
+    element.hide = () => selector.classList.add("hidden");
+  });
+
   window.addEventListener("keydown", (event) => {
     if (event.isComposing || event.keyCode === 83) {
       console.log(Camera.state);
     }
   });
 
+  const switchCameraButton = document.querySelector("#switch--camera");
+  switchCameraButton.src = "icons/switch-camera.png";
+  switchCameraButton.addEventListener("click", () => cameraStart());
+  const galleryButton = (document.querySelector("#gallery").src =
+    "icons/gallery.png");
+
   Camera.dispatch("startCamera");
+
+  setTimeout(function () {
+    window.scrollTo(0, 1);
+  }, 100);
 }
 
 export { faceapi };

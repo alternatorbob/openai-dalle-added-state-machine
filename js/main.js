@@ -1,12 +1,11 @@
 import "../style.css";
+import "../ui.css";
 import { appInit } from "./init.js";
-import { modelDetect, clearDetections } from "./detection.js";
+import { clearDetections } from "./detection.js";
 import { closePhoto, takePhoto, updateUI } from "./updateUI.js";
 import { swapFace } from "./swapFace.js";
 import { selectedFeatures } from "./detection.js";
 
-import { replace } from "./ai.js";
-import { canvasToFile, urlToFile } from "./utils.js";
 import "./formdata-polyfill.js";
 
 const machine = {
@@ -31,31 +30,47 @@ const machine = {
       },
     },
     PHOTO: {
-      //wait that user selects faces to be replaced
-      //display message telling user to select faces
-      //submit button as soon as face is selected
       close: function () {
         closePhoto();
         clearDetections();
         this.changeState("SHOOT");
       },
-      selected: function () {
-        this.changeState("SELECTED");
+      noneDetected: function () {
+        this.changeState("NONE_DETECTED");
+      },
+      detected: function () {
+        this.changeState("DETECTED");
+      },
+    },
+    NONE_DETECTED: {
+      close: function () {
+        closePhoto();
+        clearDetections();
+        this.changeState("SHOOT");
+      },
+    },
+    DETECTED: {
+      close: function () {
+        closePhoto();
+        clearDetections();
+        this.changeState("SHOOT");
       },
       async submit() {
+        this.changeState("LOADING");
         await swapFace(selectedFeatures);
       },
-      //   selected: function (e) {
-      //     this.changeState("SELECTED");
-      //     detectionsFromFaces = e;
-      //   },
+    },
+
+    LOADING: {
+      swapped: function () {
+        this.changeState("SWAPPED");
+      },
     },
     SWAPPED: {
-      //display image with replaced faces
-      //call base64 to img
-      //update camera--result canvas with new image
-      display: function (result) {
-        console.log(result.result);
+      close: function () {
+        closePhoto();
+        clearDetections();
+        this.changeState("SHOOT");
       },
     },
   },

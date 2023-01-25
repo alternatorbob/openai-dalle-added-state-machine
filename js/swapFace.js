@@ -1,34 +1,31 @@
 import { Configuration, OpenAIApi } from "openai";
 import { clearDetections } from "./detection";
 import { canvasToFile, draw64_OnCanvas } from "./utils";
+import { Camera } from "./main";
 
 const configuration = new Configuration({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
 
 const openai = new OpenAIApi(configuration);
-const defaultPrompt = "realistic portrait of a man";
+const defaultPrompt = "a portrait of a man's face";
 const res = 1024;
 
 export async function swapFace(selectedFeatures) {
   if (selectedFeatures !== undefined && selectedFeatures.length > 0) {
-    for (const element of selectedFeatures) {
-      extractFaces(element);
-      const tempCanvas = document.querySelector(
-        ".face-detection-selected-canvas"
-      );
-      const srcCanvas = document.querySelector("#camera--result");
-      const ctx = tempCanvas.getContext("2d");
+    const responses = await Promise.all(
+      selectedFeatures.map(async (element) => {
+        const tempCanvas = extractFaces(element);
+        const srcCanvas = document.querySelector("#camera--result");
+        const file = await canvasToFile(tempCanvas);
+        const imgSrc = await replace(file);
+        draw64_OnCanvas(srcCanvas, imgSrc, element);
+      })
+    );
 
-      const file = await canvasToFile(tempCanvas);
-      const imgSrc = await replace(file);
-
-      draw64_OnCanvas(srcCanvas, imgSrc, element);
-    }
+    Camera.dispatch("swapped");
+    clearDetections();
   }
-
-  //   const imgSrc = "./elon.png";
-  //   clearDetections();
 }
 
 export function extractFaces(element) {
@@ -54,6 +51,7 @@ export function extractFaces(element) {
       dim
     );
     document.body.appendChild(destCanvas);
+    return destCanvas;
   }
 }
 
@@ -63,7 +61,7 @@ export function removeParts(srcCanvas, element) {
   const ctx = tempCanvas.getContext("2d");
   ctx.drawImage(srcCanvas, 0, 0);
 
-  let radius = element.faceBox.width / 5;
+  let radius = element.faceBox.width / 7;
 
   ctx.save();
   ctx.globalCompositeOperation = "destination-out";
@@ -72,17 +70,16 @@ export function removeParts(srcCanvas, element) {
     const x = element.parts[part]._x;
     const y = element.parts[part]._y;
     ctx.beginPath();
-
-    // if (part.name == "mouth") {
-    //   console.log("it's tha mouth");
-    //   radius = element.faceBox.width / 3;
-    // }
-
+    if (part == "mouth") {
+      radius = element.faceBox.width / 3.5;
+    }
+    if (part == "nose") {
+      radius = element.faceBox.width / 5.5;
+    }
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
     ctx.fill();
   }
   ctx.restore();
-
   return tempCanvas;
 }
 

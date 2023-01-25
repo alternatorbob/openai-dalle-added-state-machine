@@ -25,9 +25,11 @@ function gotResults(err, results) {
   selectedFeatures = selectFeatures(results);
 
   if (results.length == 0) {
+    Camera.dispatch("noneDetected");
     console.log("no faces detected");
     return;
   }
+  Camera.dispatch("detected");
   drawBoxes(selectedFeatures);
 }
 
@@ -36,6 +38,8 @@ function drawBoxes(selectedFeatures) {
   if (selectedFeatures.length > 0) {
     selectedFeatures.forEach((element) => {
       const { x, y, width, height } = element.faceBox;
+      console.log("logging width and height on detection: ", width, height);
+
       ctx.beginPath();
       element.wasClicked
         ? (ctx.strokeStyle = "green")
@@ -74,7 +78,6 @@ export function addClick() {
 function selectFeatures(detections) {
   if (detections.length > 0) {
     let myFeatures = [];
-    const featureCenter = 2;
     detections.forEach((face) => {
       const { _x, _y, _width, _height } = face.alignedRect._box;
       const { leftEye, rightEye, nose, mouth } = face.parts;
@@ -87,10 +90,10 @@ function selectFeatures(detections) {
           height: _height,
         },
         parts: {
-          leftEye: leftEye[featureCenter],
-          rightEye: rightEye[featureCenter],
-          nose: nose[featureCenter],
-          mouth: mouth[featureCenter],
+          leftEye: leftEye[5],
+          rightEye: rightEye[4],
+          nose: nose[3],
+          mouth: mouth[3],
         },
         wasClicked: false,
       };

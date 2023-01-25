@@ -43,17 +43,14 @@ export function toDataURL(url) {
 
 export function draw64_OnCanvas(canvas, imgSrc, element) {
   const { x, y, width, height } = element.faceBox;
-  console.log(element.faceBox);
   const ctx = canvas.getContext("2d");
   const image = new Image();
-  image.onload = () => ctx.drawImage(image, x, y, width, height);
-  ctx.save();
-  ctx.globalCompositeOperation = "destination-out";
-  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-  image.onload = () => ctx.drawImage(image, x, y, width, height);
-  ctx.restore();
-  // Draw a smaller rectangle on top of the original rectangle with a transparent black fill
+  const dim = Math.min(width, height);
 
+  image.onload = () => {
+    ctx.drawImage(image, x, y, dim, dim);
+  };
+  //og
   image.src = imgSrc;
 }
 
